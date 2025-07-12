@@ -1,34 +1,37 @@
 package hw4
 
-type OrderedMap struct {
-	root *Node
+type OrderedMap[K Comparable, V any] struct {
+	root *Node[K, V]
 	size int
 }
 
-func NewOrderedMap() OrderedMap {
-	return OrderedMap{
+func NewOrderedMap[K Comparable, V any]() OrderedMap[K, V] {
+	return OrderedMap[K, V]{
 		root: nil,
 		size: 0,
 	}
 }
 
-func (m *OrderedMap) Insert(key, value int) {
-	var parent, node *Node = nil, m.root
+func (m *OrderedMap[K, V]) Insert(key K, value V) {
+	var parent, node *Node[K, V] = nil, m.root
+	var diff = 0
 
 	for node != nil {
-		if node.key == key {
+		diff = key.Compare(node.key)
+
+		if diff == 0 {
 			return
 		}
 
 		parent = node
-		if key < node.key {
+		if diff < 0 {
 			node = node.left
 		} else {
 			node = node.right
 		}
 	}
 
-	newNode := &Node{
+	newNode := &Node[K, V]{
 		key:   key,
 		value: value,
 		left:  nil,
@@ -38,7 +41,7 @@ func (m *OrderedMap) Insert(key, value int) {
 	if parent == nil {
 		m.root = newNode
 	} else {
-		if key < parent.key {
+		if diff < 0 {
 			parent.left = newNode
 		} else {
 			parent.right = newNode
@@ -48,16 +51,19 @@ func (m *OrderedMap) Insert(key, value int) {
 	m.size++
 }
 
-func (m *OrderedMap) Erase(key int) {
-	var parent, node *Node = nil, m.root
+func (m *OrderedMap[K, V]) Erase(key K) {
+	var parent, node *Node[K, V] = nil, m.root
+	var diff = 0
 
 	for node != nil {
-		if node.key == key {
+		diff = key.Compare(node.key)
+
+		if diff == 0 {
 			break
 		}
 
 		parent = node
-		if key < node.key {
+		if diff < 0 {
 			node = node.left
 		} else {
 			node = node.right
@@ -75,9 +81,9 @@ func (m *OrderedMap) Erase(key int) {
 		return
 	}
 
-	isLeft := key < parent.key
+	diff = key.Compare(parent.key)
 	if node.right == nil {
-		if isLeft {
+		if diff < 0 {
 			parent.left = node.left
 		} else {
 			parent.right = node.left
@@ -90,7 +96,7 @@ func (m *OrderedMap) Erase(key int) {
 		}
 
 		prev.left = nil
-		if isLeft {
+		if diff < 0 {
 			parent.left = prev
 		} else {
 			parent.right = prev
@@ -98,15 +104,18 @@ func (m *OrderedMap) Erase(key int) {
 	}
 }
 
-func (m *OrderedMap) Contains(key int) bool {
+func (m *OrderedMap[K, V]) Contains(key K) bool {
 	node := m.root
+	var diff = 0
 
 	for node != nil {
-		if node.key == key {
+		diff = key.Compare(node.key)
+
+		if diff == 0 {
 			return true
 		}
 
-		if key < node.key {
+		if diff < 0 {
 			node = node.left
 		} else {
 			node = node.right
@@ -116,15 +125,15 @@ func (m *OrderedMap) Contains(key int) bool {
 	return false
 }
 
-func (m *OrderedMap) Size() int {
+func (m *OrderedMap[K, V]) Size() int {
 	return m.size
 }
 
-func (m *OrderedMap) ForEach(action func(int, int)) {
+func (m *OrderedMap[K, V]) ForEach(action func(K, V)) {
 	traverse(m.root, action)
 }
 
-func traverse(node *Node, action func(int, int)) {
+func traverse[K Comparable, V any](node *Node[K, V], action func(K, V)) {
 	if node == nil {
 		return
 	}
@@ -140,8 +149,12 @@ func traverse(node *Node, action func(int, int)) {
 	}
 }
 
-type Node struct {
-	key         int
-	value       int
-	left, right *Node
+type Node[K, V any] struct {
+	key         K
+	value       V
+	left, right *Node[K, V]
+}
+
+type Comparable interface {
+	Compare(other Comparable) int
 }
