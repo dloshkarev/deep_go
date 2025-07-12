@@ -130,23 +130,17 @@ func (m *OrderedMap[K, V]) Size() int {
 }
 
 func (m *OrderedMap[K, V]) ForEach(action func(K, V)) {
-	traverse(m.root, action)
+	m.root.traverse(action)
 }
 
-func traverse[K Comparable, V any](node *Node[K, V], action func(K, V)) {
-	if node == nil {
+func (n *Node[K, V]) traverse(action func(K, V)) {
+	if n == nil {
 		return
 	}
 
-	if node.left != nil {
-		traverse(node.left, action)
-	}
-
-	action(node.key, node.value)
-
-	if node.right != nil {
-		traverse(node.right, action)
-	}
+	n.left.traverse(action)
+	action(n.key, n.value)
+	n.right.traverse(action)
 }
 
 type Node[K, V any] struct {
