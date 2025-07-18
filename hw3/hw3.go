@@ -40,12 +40,10 @@ func (b *COWBuffer) Update(index int, value byte) bool {
 	}
 
 	if *b.refs > 1 {
-		b.Close()
-		refs := 1
-		b.refs = &refs
-		copied := make([]byte, len(b.data))
-		copy(copied, b.data)
-		b.data = copied
+		*b.refs--
+		newBuffer := NewCOWBuffer(make([]byte, len(b.data)))
+		copy(newBuffer.data, b.data)
+		*b = newBuffer
 	}
 
 	b.data[index] = value
