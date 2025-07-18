@@ -13,24 +13,6 @@ func NewOrderedMap[K Comparable, V any]() OrderedMap[K, V] {
 }
 
 func (m *OrderedMap[K, V]) Insert(key K, value V) {
-	var parent, node *Node[K, V] = nil, m.root
-	var diff = 0
-
-	for node != nil {
-		diff = key.Compare(node.key)
-
-		if diff == 0 {
-			return
-		}
-
-		parent = node
-		if diff < 0 {
-			node = node.left
-		} else {
-			node = node.right
-		}
-	}
-
 	newNode := &Node[K, V]{
 		key:   key,
 		value: value,
@@ -38,69 +20,52 @@ func (m *OrderedMap[K, V]) Insert(key K, value V) {
 		right: nil,
 	}
 
-	if parent == nil {
+	if m.size == 0 {
 		m.root = newNode
+		m.size++
 	} else {
-		if diff < 0 {
-			parent.left = newNode
-		} else {
-			parent.right = newNode
-		}
-	}
+		lookup[K, V](key, nil, m.root, func(parent *Node[K, V], node *Node[K, V]) {
+			diff := key.Compare(node.key)
 
-	m.size++
+			if diff < 0 {
+				node.left = newNode
+				m.size++
+			} else if diff > 0 {
+				node.right = newNode
+				m.size++
+			}
+		})
+	}
 }
 
 func (m *OrderedMap[K, V]) Erase(key K) {
-	var parent, node *Node[K, V] = nil, m.root
-	var diff = 0
+	if m.size > 0 {
+		lookup[K, V](key, nil, m.root, func(parent *Node[K, V], node *Node[K, V]) {
+			if node != nil && key.Compare(node.key) == 0 {
+				m.size--
+				diff := key.Compare(parent.key)
+				if node.right == nil {
+					if diff < 0 {
+						parent.left = node.left
+					} else {
+						parent.right = node.left
+					}
+				} else {
+					prev, minNode := node.right, node.right.left
+					for minNode != nil {
+						prev = minNode
+						minNode = minNode.left
+					}
 
-	for node != nil {
-		diff = key.Compare(node.key)
-
-		if diff == 0 {
-			break
-		}
-
-		parent = node
-		if diff < 0 {
-			node = node.left
-		} else {
-			node = node.right
-		}
-	}
-
-	if node == nil {
-		return
-	}
-
-	m.size--
-
-	if parent == nil {
-		m.root = nil
-		return
-	}
-
-	diff = key.Compare(parent.key)
-	if node.right == nil {
-		if diff < 0 {
-			parent.left = node.left
-		} else {
-			parent.right = node.left
-		}
-	} else {
-		prev, minNode := node.right, node.right.left
-		for minNode != nil {
-			prev = minNode
-			minNode = minNode.left
-		}
-
-		prev.left = nil
-		if diff < 0 {
-			parent.left = prev
-		} else {
-			parent.right = prev
-		}
+					prev.left = nil
+					if diff < 0 {
+						parent.left = prev
+					} else {
+						parent.right = prev
+					}
+				}
+			}
+		})
 	}
 }
 
@@ -131,6 +96,38 @@ func (m *OrderedMap[K, V]) Size() int {
 
 func (m *OrderedMap[K, V]) ForEach(action func(K, V)) {
 	m.root.traverse(action)
+}
+
+func lookup[K Comparable, V any](
+	key K,
+	parent *Node[K, V],
+	node *Node[K, V],
+	handler func(*Node[K, V], *Node[K, V]),
+) {
+	if node == nil {
+		return
+	}
+
+	diff := key.Compare(node.key)
+
+	if diff == 0 {
+		handler(parent, node)
+		return
+	}
+
+	if diff < 0 {
+		if node.left != nil {
+			lookup(key, node, node.left, handler)
+		} else {
+			handler(parent, node)
+		}
+	} else {
+		if node.right != nil {
+			lookup(key, node, node.right, handler)
+		} else {
+			handler(parent, node)
+		}
+	}
 }
 
 func (n *Node[K, V]) traverse(action func(K, V)) {
