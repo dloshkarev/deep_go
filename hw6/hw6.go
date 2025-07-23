@@ -2,14 +2,16 @@ package hw6
 
 type Option func(*GamePerson)
 
+type GamePerson struct {
+	data [DataLength]byte
+}
+
 func WithName(name string) func(*GamePerson) {
 	return func(person *GamePerson) {
 		if len(name) > NameLength {
 			panic("name too long")
 		}
-		for i := 0; i < len(name); i++ {
-			person.data[i] = name[i]
-		}
+		copy(person.data[:], name)
 	}
 }
 
@@ -104,14 +106,11 @@ const (
 	HouseMask             = 1 << 0
 	GunMask               = 1 << 1
 	FamilyMask            = 1 << 2
+	HighNibbleMask        = 0b00001111
 	BuilderGamePersonType = iota
 	BlacksmithGamePersonType
 	WarriorGamePersonType
 )
-
-type GamePerson struct {
-	data [DataLength]byte
-}
 
 func NewGamePerson(options ...Option) GamePerson {
 	person := GamePerson{}
@@ -159,7 +158,7 @@ func (p *GamePerson) Mana() int {
 }
 
 func (p *GamePerson) Health() int {
-	return int(p.data[HealthIdx]&0b00001111)<<8 | int(p.data[HealthIdx+1])
+	return int(p.data[HealthIdx]&HighNibbleMask)<<8 | int(p.data[HealthIdx+1])
 }
 
 func (p *GamePerson) Respect() int {
@@ -186,7 +185,7 @@ func (p *GamePerson) HasGun() bool {
 	return p.data[FlagsIdx]&GunMask == GunMask
 }
 
-func (p *GamePerson) HasFamilty() bool {
+func (p *GamePerson) HasFamily() bool {
 	return p.data[FlagsIdx]&FamilyMask == FamilyMask
 }
 
@@ -217,6 +216,6 @@ func (p *GamePerson) readNibble(idx int, isLeft bool) int {
 	if isLeft {
 		return int(p.data[idx] >> 4)
 	} else {
-		return int(p.data[idx] & 0b00001111)
+		return int(p.data[idx] & HighNibbleMask)
 	}
 }
