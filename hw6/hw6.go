@@ -3,13 +3,15 @@ package hw6
 type Option func(*GamePerson)
 
 type GamePerson struct {
+	// |--Name--|---X---|---Y---|---Z---|--Gold-|-Mana--|-Health|Strength|Respect|-Level|Experience|PersonType|Family|-Gun--|-House|
+	// |42 bytes|4 bytes|4 bytes|4 bytes|4 bytes|12 bits|12 bits| 4 bits | 4 bits|4 bits|--4 bits--|--4 bits--|-1 bit|-1 bit|-1 bit|
 	data [DataLength]byte
 }
 
 func WithName(name string) func(*GamePerson) {
 	return func(person *GamePerson) {
 		if len(name) > NameLength {
-			panic("name too long")
+			panic("name is too long")
 		}
 		copy(person.data[:], name)
 	}
