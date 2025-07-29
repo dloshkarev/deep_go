@@ -15,12 +15,10 @@ func (e *MultiError) Error() string {
 	if len(e.errors) > 0 {
 		sb.WriteString(strconv.Itoa(len(e.errors)))
 		sb.WriteString(" errors occured:\n")
-	}
-	for _, err := range e.errors {
-		sb.WriteString("\t* ")
-		sb.WriteString(err.Error())
-	}
-	if len(e.errors) > 0 {
+		for _, err := range e.errors {
+			sb.WriteString("\t* ")
+			sb.WriteString(err.Error())
+		}
 		sb.WriteString("\n")
 	}
 	return sb.String()
