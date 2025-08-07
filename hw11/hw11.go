@@ -12,7 +12,7 @@ func Trace(stacks [][]uintptr) []uintptr {
 		for j := 0; j < len(stacks[i]); j++ {
 			ptr := stacks[i][j]
 			if ptr != EmptyPointer {
-				result = traverse(ptr, visited, result)
+				traverse(ptr, visited, &result)
 			}
 		}
 	}
@@ -20,23 +20,22 @@ func Trace(stacks [][]uintptr) []uintptr {
 	return result
 }
 
-func traverse(ptr uintptr, visited map[uintptr]struct{}, results []uintptr) (result []uintptr) {
-	if _, exists := visited[ptr]; exists {
-		return results
-	}
+func traverse(ptr uintptr, visited map[uintptr]struct{}, result *[]uintptr) {
+	if _, exists := visited[ptr]; !exists {
+		defer func() {
+			if r := recover(); r != nil {
+				// catch addressing out of program memory
+				// ignore, because last valid pointer already in result
+			}
+		}()
 
-	defer func() {
-		if r := recover(); r != nil {
-			result = results
+		visited[ptr] = struct{}{}
+		next := (*uintptr)(unsafe.Pointer(ptr))
+
+		if next != nil {
+			nextPtr := *next
+			*result = append(*result, ptr)
+			traverse(nextPtr, visited, result)
 		}
-	}()
-
-	visited[ptr] = struct{}{}
-	next := (*uintptr)(unsafe.Pointer(ptr))
-
-	if next == nil {
-		return results
 	}
-
-	return traverse(*next, visited, append(results, ptr))
 }
